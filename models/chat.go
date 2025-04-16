@@ -4,6 +4,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	chatBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("63"))
+	viewportStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("99")).Height(12)
 )
 
 type chatModel struct {
@@ -12,9 +18,20 @@ type chatModel struct {
 }
 
 func newChatModel() *chatModel {
+	ta := textarea.New()
+	ta.Placeholder = "Type your message..."
+	ta.Prompt = "> "
+	ta.Focus()
+
+	ta.SetWidth(60)
+	ta.SetHeight(3)
+
+	vp := viewport.New(60, 12)
+	vp.Style = viewportStyle
+
 	return &chatModel{
-		textarea: textarea.New(),
-		viewport: viewport.New(80, 20),
+		textarea: ta,
+		viewport: vp,
 	}
 }
 
@@ -30,5 +47,7 @@ func (c *chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c *chatModel) View() string {
-	return c.viewport.View() + "\n" + c.textarea.View()
+	return chatBorderStyle.Render(
+		c.viewport.View()+"\n"+c.textarea.View(),
+	)
 }
