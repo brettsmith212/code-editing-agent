@@ -2,9 +2,11 @@ package models
 
 import (
 	"os"
+	"fmt"
+	"io"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
-	"fmt"
 )
 
 type fileItem struct {
@@ -14,6 +16,22 @@ type fileItem struct {
 func (f fileItem) Title() string       { return f.name }
 func (f fileItem) Description() string { return "" }
 func (f fileItem) FilterValue() string { return f.name }
+
+// CompactDelegate renders a single line with no extra spacing
+// and highlights the selected item.
+type CompactDelegate struct{}
+
+func (d CompactDelegate) Height() int          { return 1 }
+func (d CompactDelegate) Spacing() int         { return 0 }
+func (d CompactDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
+func (d CompactDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+	name := item.(fileItem).name
+	style := lipgloss.NewStyle()
+	if index == m.Index() {
+		style = style.Bold(true).Foreground(lipgloss.Color("69"))
+	}
+	io.WriteString(w, style.Render(name))
+}
 
 type sidebarModel struct {
 	list list.Model
@@ -29,7 +47,7 @@ func newSidebarModelFromDir(dir string) *sidebarModel {
 	} else {
 		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
 	}
-	l := list.New(items, list.NewDefaultDelegate(), 30, 20)
+	l := list.New(items, CompactDelegate{}, 30, 20)
 	l.Title = "Files"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
