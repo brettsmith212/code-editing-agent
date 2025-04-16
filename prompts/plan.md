@@ -33,7 +33,7 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
 
 ## Chat Interface
 
-- [ ] **Step 4: Implement basic chat sub-model**
+- [x] **Step 4: Implement basic chat sub-model**
   - **Task**: Create `models/chat.go` with a chat sub-model using `bubbles/textarea` for user input and `bubbles/viewport` for conversation history, including basic `Update` and `View` methods.
   - **Files**:
     - `models/chat.go`: New file with `type chatModel struct { textarea textarea.Model, viewport viewport.Model }` and method implementations

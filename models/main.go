@@ -27,6 +27,5 @@ func (m *MainModel) View() string {
 
 // Placeholder structs for compilation
 
-type chatModel struct{}
 type codeviewModel struct{}
 type sidebarModel struct{}
