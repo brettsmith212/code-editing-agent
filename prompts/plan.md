@@ -4,7 +4,7 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
 
 ## Setup and Basic Structure
 
-- [ ] **Step 1: Install dependencies**
+- [x] **Step 1: Install dependencies**
   - **Task**: Install required Go libraries for Bubble Tea, Bubbles, Lip Gloss, diff computation, and syntax highlighting.
   - **Files**: None (user action)
   - **Step Dependencies**: None
@@ -17,14 +17,14 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
     go get github.com/alecthomas/chroma
     ```
 
-- [ ] **Step 2: Set up Bubble Tea in main.go**
+- [x] **Step 2: Set up Bubble Tea in main.go**
   - **Task**: Modify `main.go` to initialize and run a Bubble Tea program with a basic main model, replacing the existing text-based CLI loop.
   - **Files**:
     - `main.go`: Replace existing code with Bubble Tea initialization, e.g., `p := tea.NewProgram(&mainModel{}); if err := p.Start(); err != nil { log.Fatal(err) }`
   - **Step Dependencies**: Step 1
   - **User Instructions**: None
 
-- [ ] **Step 3: Create main model structure**
+- [x] **Step 3: Create main model structure**
   - **Task**: Create `models/main.go` with the main Bubble Tea model struct, including basic `Init`, `Update`, and `View` methods, and fields for sub-models (chat, code view, sidebar) and agent state.
   - **Files**:
     - `models/main.go`: New file with `type mainModel struct { chat *chatModel, codeview *codeviewModel, sidebar *sidebarModel, agent *agent.Agent, conversation []anthropic.MessageParam, state string }` and basic method implementations

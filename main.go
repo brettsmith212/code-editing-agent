@@ -3,13 +3,14 @@ package main
 import (
 	"log"
 
+	"agent/models"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type mainModel struct{}
-
 func main() {
-	p := tea.NewProgram(&mainModel{})
+	m := &models.MainModel{}
+	p := tea.NewProgram(m)
 	if err := p.Start(); err != nil {
 		log.Fatal(err)
 	}
