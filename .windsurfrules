@@ -13,6 +13,12 @@ It is organized as follows:
 3. main.go
     - The main entry point of the application
 
+## Testing and Debugging
+
+1. Run `go run main.go` to run the application
+2. User will enter commands to test if the application is working
+3. Tail logs in the `logs` directory to view the chat history and debug issues
+
 ## Rules for Building Effective AI Agents
 
 These rules provide guidelines for creating effective, reliable, and maintainable AI agents. They are based on best practices from the "Building Effective Agents" article and are tailored for your code editor AI Agent to follow while helping you develop an AI Agent code helper.
