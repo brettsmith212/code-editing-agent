@@ -1,32 +1,16 @@
 package main
 
 import (
-	"bufio"
-	"context"
-	"fmt"
-	"os"
+	"log"
 
-	"github.com/anthropics/anthropic-sdk-go"
-
-	"agent/agent"
-	"agent/tools"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
+type mainModel struct{}
+
 func main() {
-	client := anthropic.NewClient()
-
-	scanner := bufio.NewScanner(os.Stdin)
-	getUserMessage := func() (string, bool) {
-		if !scanner.Scan() {
-			return "", false
-		}
-		return scanner.Text(), true
-	}
-
-	toolDefs := []tools.ToolDefinition{tools.ReadFileDefinition, tools.ListFilesDefinition, tools.EditFileDefinition}
-	myAgent := agent.NewAgent(&client, getUserMessage, toolDefs)
-	err := myAgent.Run(context.TODO())
-	if err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
+	p := tea.NewProgram(&mainModel{})
+	if err := p.Start(); err != nil {
+		log.Fatal(err)
 	}
 }
