@@ -56,12 +56,15 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			rightPanelWidth = 40
 		}
 		
+		// Use consistent height for both panels
+		panelHeight := m.height - 2 // Reserve space for margins
+		
 		// Update both panels with their respective sizes
 		if m.chat != nil {
-			m.chat.updateSize(rightPanelWidth, m.height - 2) // Reserve space for top margin
+			m.chat.updateSize(rightPanelWidth, panelHeight)
 		}
 		if m.sidebar != nil {
-			m.sidebar.updateSize(leftPanelWidth, m.height - 2) // Reserve space for top margin
+			m.sidebar.updateSize(leftPanelWidth, panelHeight)
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -145,6 +148,9 @@ func (m *MainModel) View() string {
 	// Calculate usable height - make sure both panels use the same exact height
 	// -2 for top margin, -2 for borders (top and bottom)
 	usableHeight := m.height - 4
+	
+	// Ensure both panels have exactly the same height
+	exactHeight := usableHeight - 2 // Account for borders
 
 	// Create left panel: sidebar (if present) + codeview (if present)
 	var leftPanel string
@@ -175,13 +181,13 @@ func (m *MainModel) View() string {
 	// Base styles with consistent borders and padding for both panels
 	leftStyle := lipgloss.NewStyle().
 		Width(leftPanelWidth - 2). // Account for border width
-		Height(usableHeight).      // Set a fixed height for consistency
+		Height(exactHeight).      // Set a fixed height for consistency
 		BorderStyle(lipgloss.NormalBorder()). // Always have borders
 		Padding(0, 1) // Consistent padding
 		
 	rightStyle := lipgloss.NewStyle().
 		Width(rightPanelWidth - 2). // Account for border width
-		Height(usableHeight).       // Same fixed height as left panel
+		Height(exactHeight).       // Same fixed height as left panel
 		BorderStyle(lipgloss.NormalBorder()). // Always have borders
 		Padding(0, 1) // Consistent padding
 	

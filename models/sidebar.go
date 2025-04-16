@@ -116,6 +116,21 @@ func (s *sidebarModel) View() string {
 		content = strings.Join(lines[1:], "\n")
 	}
 	
+	// Calculate available height after title
+	availableHeight := s.height
+	
+	// Pad the content vertically to match chat height exactly
+	contentLines := strings.Split(content, "\n")
+	
+	// Calculate how many lines to pad to match chat height
+	// Account for title line and a bit of padding
+	paddingNeeded := availableHeight - len(contentLines)
+	if paddingNeeded > 0 {
+		// Add padding at the bottom
+		bottomPadding := strings.Repeat("\n", paddingNeeded)
+		content = content + bottomPadding
+	}
+	
 	// Combine title and content with consistent styling
 	return title + "\n" + content
 }
