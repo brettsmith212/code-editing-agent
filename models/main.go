@@ -45,14 +45,23 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-		m.height = msg.Height
-		// Calculate right panel width (70% of terminal, min 40 cols)
-		rightPanelWidth := m.width * 7 / 10
+		m.height = msg.Height - 2 // Reserve space for top margin
+		// Calculate panel widths
+		leftPanelWidth := m.width * 3 / 10
+		if leftPanelWidth < 20 {
+			leftPanelWidth = 20
+		}
+		rightPanelWidth := m.width - leftPanelWidth
 		if rightPanelWidth < 40 {
 			rightPanelWidth = 40
 		}
+		
+		// Update both panels with their respective sizes
 		if m.chat != nil {
-			m.chat.updateSize(rightPanelWidth, m.height)
+			m.chat.updateSize(rightPanelWidth, m.height - 2) // Reserve space for top margin
+		}
+		if m.sidebar != nil {
+			m.sidebar.updateSize(leftPanelWidth, m.height - 2) // Reserve space for top margin
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -123,15 +132,18 @@ func (m *MainModel) View() string {
 		return "Loading..."
 	}
 
-	// Calculate panel widths
-	leftPanelWidth := m.width - (m.width * 7 / 10)
+	// Calculate panel widths - using same calculation as Update method
+	leftPanelWidth := m.width * 3 / 10
 	if leftPanelWidth < 20 {
 		leftPanelWidth = 20
 	}
-	rightPanelWidth := m.width - leftPanelWidth
+	rightPanelWidth := m.width - leftPanelWidth - 1 // -1 for the gap between panels
 	if rightPanelWidth < 40 {
 		rightPanelWidth = 40
 	}
+	
+	// Calculate usable height (leave some space at the top and bottom)
+	usableHeight := m.height - 4 // Reserve space for top margin and borders
 
 	// Create left panel: sidebar (if present) + codeview (if present)
 	var leftPanel string
@@ -156,19 +168,44 @@ func (m *MainModel) View() string {
 		rightPanel = "Chat"
 	}
 
-	// Highlight focused pane
-	leftStyle := lipgloss.NewStyle().Width(leftPanelWidth)
-	rightStyle := lipgloss.NewStyle().Width(rightPanelWidth)
+	// Highlight focused pane with properly sized borders
+	// Use a simpler approach with fewer calculations
+	leftStyle := lipgloss.NewStyle().
+		Width(leftPanelWidth - 2). // Account for border width
+		Height(usableHeight)       // Set a fixed height
+		
+	rightStyle := lipgloss.NewStyle().
+		Width(rightPanelWidth - 2). // Account for border width
+		Height(usableHeight)        // Set a fixed height
+	
+	// Apply borders based on focus
 	if m.focusedPane == "sidebar" {
-		leftStyle = leftStyle.Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("69")).Bold(true)
+		leftStyle = leftStyle.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("69")).
+			Padding(0, 1)
 	}
+	
 	if m.focusedPane == "chat" {
-		rightStyle = rightStyle.Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("69")).Bold(true)
+		rightStyle = rightStyle.
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("69")).
+			Padding(0, 1)
 	}
 
+	// Force a space between panels
+	spacer := lipgloss.NewStyle().Width(1).Render(" ")
+	
 	// Combine panels horizontally
-	row := lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(leftPanel), rightStyle.Render(rightPanel))
-	return row
+	row := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		leftStyle.Render(leftPanel),
+		spacer,
+		rightStyle.Render(rightPanel),
+	)
+	
+	// Add a newline at the top to ensure top border is visible
+	return "\n\n" + row // Add extra newline for top margin
 }
 
 func joinConversation(conv []string) string {

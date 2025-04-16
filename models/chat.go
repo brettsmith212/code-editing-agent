@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	chatBorderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
-	viewportStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
+	// Use normal borders instead of rounded for consistency
+	chatBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
+	viewportStyle   = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
 )
 
 type chatModel struct {
@@ -40,11 +41,11 @@ func newChatModel() *chatModel {
 	// Remove highlighting and make it plain
 	ta.FocusedStyle.Base = lipgloss.NewStyle().
 		BorderForeground(lipgloss.Color("69")).
-		BorderStyle(lipgloss.RoundedBorder())
+		BorderStyle(lipgloss.NormalBorder())
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	ta.FocusedStyle.Text = lipgloss.NewStyle()
 	ta.BlurredStyle.Base = lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder())
+		BorderStyle(lipgloss.NormalBorder())
 	ta.BlurredStyle.Text = lipgloss.NewStyle()
 
 	vp := viewport.New(initialWidth, initialHeight-3) // Leave space for the textarea
@@ -119,7 +120,8 @@ func (c *chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (c *chatModel) View() string {
 	// Create a layout that takes the full available space
-	return fmt.Sprintf("%s\n%s", 
+	// Add a newline at the beginning to ensure top border is visible
+	return fmt.Sprintf("\n%s\n%s", 
 		c.viewport.View(),
 		c.textarea.View(),
 	)

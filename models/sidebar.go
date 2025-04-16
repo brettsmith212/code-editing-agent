@@ -4,6 +4,7 @@ import (
 	"os"
 	"fmt"
 	"io"
+	"strings"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
@@ -34,7 +35,9 @@ func (d CompactDelegate) Render(w io.Writer, m list.Model, index int, item list.
 }
 
 type sidebarModel struct {
-	list list.Model
+	list   list.Model
+	width  int
+	height int
 }
 
 func newSidebarModelFromDir(dir string) *sidebarModel {
@@ -47,19 +50,70 @@ func newSidebarModelFromDir(dir string) *sidebarModel {
 	} else {
 		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
 	}
-	l := list.New(items, CompactDelegate{}, 30, 20)
+	
+	// Initial default size, will be updated on WindowSizeMsg
+	initialWidth := 30
+	initialHeight := 20
+	
+	l := list.New(items, CompactDelegate{}, initialWidth, initialHeight)
 	l.Title = "Files"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("69"))
-	return &sidebarModel{list: l}
+	
+	return &sidebarModel{
+		list:   l,
+		width:  initialWidth,
+		height: initialHeight,
+	}
+}
+
+// updateSize updates the sidebar dimensions based on terminal size
+func (s *sidebarModel) updateSize(width, height int) {
+	s.width = width
+	s.height = height
+	
+	// Adjust width for padding and borders - use the same calculation as chat viewport
+	contentWidth := width - 6 // Account for padding and borders
+	if contentWidth < 20 {    // Minimum reasonable width
+		contentWidth = 20
+	}
+	
+	// Set height to match chat viewport's calculation
+	viewportHeight := height - 4 // Match chat viewport's calculation
+	if viewportHeight < 5 {      // Minimum reasonable height
+		viewportHeight = 5
+	}
+	
+	s.list.SetSize(contentWidth, viewportHeight)
 }
 
 func (s *sidebarModel) Update(msg any) {
-	m, _ := s.list.Update(msg)
-	s.list = m
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// Handle window resize
+		s.updateSize(msg.Width, msg.Height)
+	default:
+		m, _ := s.list.Update(msg)
+		s.list = m
+	}
 }
 
 func (s *sidebarModel) View() string {
-	return s.list.View()
+	// Make a custom wrapper to ensure the title always appears
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("69"))
+	title := titleStyle.Render("Files")
+	
+	// Get the list content without the default title
+	content := s.list.View()
+	
+	// If the view already has a title, we need to remove it to avoid duplication
+	lines := strings.Split(content, "\n")
+	if len(lines) > 0 && strings.Contains(lines[0], "Files") {
+		// Remove the first line (title) and join the rest
+		content = strings.Join(lines[1:], "\n")
+	}
+	
+	// Combine title and content with consistent styling
+	return title + "\n" + content
 }
