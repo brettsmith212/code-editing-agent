@@ -1,30 +1,47 @@
 package models
 
 import (
+	"os"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
-	"strings"
+	"fmt"
 )
 
-type sidebarModel struct {
-	files   []string // List of files
-	selected int    // Index of selected file
+type fileItem struct {
+	name string
 }
 
-func newSidebarModel(files []string) *sidebarModel {
-	return &sidebarModel{
-		files: files,
-		selected: 0,
+func (f fileItem) Title() string       { return f.name }
+func (f fileItem) Description() string { return "" }
+func (f fileItem) FilterValue() string { return f.name }
+
+type sidebarModel struct {
+	list list.Model
+}
+
+func newSidebarModelFromDir(dir string) *sidebarModel {
+	entries, err := os.ReadDir(dir)
+	items := make([]list.Item, 0, len(entries))
+	if err == nil {
+		for _, entry := range entries {
+			items = append(items, fileItem{name: entry.Name()})
+		}
+	} else {
+		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
 	}
+	l := list.New(items, list.NewDefaultDelegate(), 30, 20)
+	l.Title = "Files"
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(false)
+	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("69"))
+	return &sidebarModel{list: l}
+}
+
+func (s *sidebarModel) Update(msg any) {
+	m, _ := s.list.Update(msg)
+	s.list = m
 }
 
 func (s *sidebarModel) View() string {
-	var b strings.Builder
-	for i, f := range s.files {
-		style := lipgloss.NewStyle()
-		if i == s.selected {
-			style = style.Bold(true).Foreground(lipgloss.Color("69"))
-		}
-		b.WriteString(style.Render(f) + "\n")
-	}
-	return lipgloss.NewStyle().Padding(1, 1).Render(strings.TrimRight(b.String(), "\n"))
+	return s.list.View()
 }

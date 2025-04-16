@@ -79,14 +79,14 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
   - **Step Dependencies**: Step 5
   - **User Instructions**: None
 
-- [ ] **Step 10: Implement sidebar sub-model**
+- [x] **Step 10: Implement sidebar sub-model**
   - **Task**: Create `models/sidebar.go` with a sidebar sub-model using `bubbles/list` to display files from the current directory via direct file system access.
   - **Files**:
     - `models/sidebar.go`: New file with `type sidebarModel struct { list list.Model }` and `os.ReadDir` integration
   - **Step Dependencies**: Step 9
   - **User Instructions**: None
 
-- [ ] **Step 11: Integrate sidebar into main model**
+- [x] **Step 11: Integrate sidebar into main model**
   - **Task**: Add the sidebar sub-model to the main model and render it in the left panel of the split-screen layout.
   - **Files**:
     - `models/main.go`: Modify to initialize `sidebar` field and include `m.sidebar.View()` in left panel

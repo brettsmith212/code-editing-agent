@@ -23,14 +23,15 @@ type MainModel struct {
 	waitingForClaude bool
 	width       int // Terminal width
 	height      int // Terminal height
+	focusedPane string // "sidebar" or "chat"
 }
 
 func (m *MainModel) Init() tea.Cmd {
 	m.chat = newChatModel()
 	m.conversation = []string{}
 	m.waitingForClaude = false
-	// For now, provide a static file list
-	m.sidebar = newSidebarModel([]string{"main.go", "chat.go", "sidebar.go", "agent.go"})
+	m.sidebar = newSidebarModelFromDir(".")
+	m.focusedPane = "chat"
 
 	cmds := []tea.Cmd{
 		tea.EnterAltScreen,
@@ -59,6 +60,14 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
+		if msg.Type == tea.KeyTab {
+			if m.focusedPane == "chat" {
+				m.focusedPane = "sidebar"
+			} else {
+				m.focusedPane = "chat"
+			}
+			return m, nil
+		}
 		if m.chat != nil && msg.Type == tea.KeyEnter && !m.waitingForClaude {
 			input := m.chat.textarea.Value()
 			if input != "" {
@@ -79,7 +88,12 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.chat.AddMessage("Claude", msg.Text)
 		}
 	}
-	if m.chat != nil {
+	// Forward input to focused pane
+	if m.focusedPane == "sidebar" && m.sidebar != nil {
+		m.sidebar.Update(msg)
+		return m, nil
+	}
+	if m.focusedPane == "chat" && m.chat != nil {
 		updatedModel, cmd := m.chat.Update(msg)
 		m.chat = updatedModel.(*chatModel)
 		return m, cmd
@@ -142,9 +156,15 @@ func (m *MainModel) View() string {
 		rightPanel = "Chat"
 	}
 
-	// Define styles (no borders on inner chat)
+	// Highlight focused pane
 	leftStyle := lipgloss.NewStyle().Width(leftPanelWidth)
 	rightStyle := lipgloss.NewStyle().Width(rightPanelWidth)
+	if m.focusedPane == "sidebar" {
+		leftStyle = leftStyle.Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("69")).Bold(true)
+	}
+	if m.focusedPane == "chat" {
+		rightStyle = rightStyle.Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("69")).Bold(true)
+	}
 
 	// Combine panels horizontally
 	row := lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(leftPanel), rightStyle.Render(rightPanel))
