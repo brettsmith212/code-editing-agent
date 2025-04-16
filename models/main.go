@@ -29,7 +29,9 @@ func (m *MainModel) Init() tea.Cmd {
 	m.chat = newChatModel()
 	m.conversation = []string{}
 	m.waitingForClaude = false
-	
+	// For now, provide a static file list
+	m.sidebar = newSidebarModel([]string{"main.go", "chat.go", "sidebar.go", "agent.go"})
+
 	cmds := []tea.Cmd{
 		tea.EnterAltScreen,
 	}
@@ -120,7 +122,7 @@ func (m *MainModel) View() string {
 	// Create left panel: sidebar (if present) + codeview (if present)
 	var leftPanel string
 	if m.sidebar != nil {
-		leftPanel += "[Sidebar]"
+		leftPanel += m.sidebar.View()
 	}
 	if m.codeview != nil {
 		if leftPanel != "" {
@@ -158,4 +160,3 @@ func joinConversation(conv []string) string {
 }
 
 type codeviewModel struct{}
-type sidebarModel struct{}

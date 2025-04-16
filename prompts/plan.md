@@ -72,7 +72,7 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
 
 ## Layout and Additional UI Components
 
-- [ ] **Step 9: Implement split-screen layout**
+- [x] **Step 9: Implement split-screen layout**
   - **Task**: Modify the main model's `View` method to render a split-screen layout with left (code view/sidebar) and right (chat) panels using Lip Gloss for layout styling.
   - **Files**:
     - `models/main.go`: Update `View` to use `lipgloss.JoinHorizontal` and `lipgloss.JoinVertical` for layout
