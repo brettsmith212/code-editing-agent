@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"context"
 	"agent/agent"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type claudeResponseMsg struct{
@@ -20,6 +21,8 @@ type MainModel struct {
 	state       string
 	quitting    bool
 	waitingForClaude bool
+	width       int // Terminal width
+	height      int // Terminal height
 }
 
 func (m *MainModel) Init() tea.Cmd {
@@ -38,10 +41,15 @@ func (m *MainModel) Init() tea.Cmd {
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		// First pass the size message to the chat model
+		m.width = msg.Width
+		m.height = msg.Height
+		// Calculate right panel width (70% of terminal, min 40 cols)
+		rightPanelWidth := m.width * 7 / 10
+		if rightPanelWidth < 40 {
+			rightPanelWidth = 40
+		}
 		if m.chat != nil {
-			updatedModel, _ := m.chat.Update(msg)
-			m.chat = updatedModel.(*chatModel)
+			m.chat.updateSize(rightPanelWidth, m.height)
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -95,10 +103,50 @@ func (m *MainModel) View() string {
 	if m.quitting {
 		return "Goodbye!"
 	}
-	if m.chat != nil {
-		return m.chat.View()
+	if m.width == 0 || m.height == 0 {
+		return "Loading..."
 	}
-	return "Chat"
+
+	// Calculate panel widths
+	leftPanelWidth := m.width - (m.width * 7 / 10)
+	if leftPanelWidth < 20 {
+		leftPanelWidth = 20
+	}
+	rightPanelWidth := m.width - leftPanelWidth
+	if rightPanelWidth < 40 {
+		rightPanelWidth = 40
+	}
+
+	// Create left panel: sidebar (if present) + codeview (if present)
+	var leftPanel string
+	if m.sidebar != nil {
+		leftPanel += "[Sidebar]"
+	}
+	if m.codeview != nil {
+		if leftPanel != "" {
+			leftPanel += "\n"
+		}
+		leftPanel += "[CodeView]"
+	}
+	if leftPanel == "" {
+		leftPanel = " " // Empty panel fallback
+	}
+
+	// Right panel: chat
+	var rightPanel string
+	if m.chat != nil {
+		rightPanel = m.chat.View()
+	} else {
+		rightPanel = "Chat"
+	}
+
+	// Define styles (no borders on inner chat)
+	leftStyle := lipgloss.NewStyle().Width(leftPanelWidth)
+	rightStyle := lipgloss.NewStyle().Width(rightPanelWidth)
+
+	// Combine panels horizontally
+	row := lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(leftPanel), rightStyle.Render(rightPanel))
+	return row
 }
 
 func joinConversation(conv []string) string {
