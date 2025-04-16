@@ -2,50 +2,79 @@ package models
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"context"
+	"agent/agent"
 )
+
+type claudeResponseMsg struct{
+	Text string
+	Err error
+}
 
 type MainModel struct {
 	chat        *chatModel
 	codeview    *codeviewModel
 	sidebar     *sidebarModel
-	agent       interface{} // Placeholder for *agent.Agent
+	Agent       *agent.Agent
 	conversation []string // Conversation history as plain strings for now
 	state       string
 	quitting    bool
+	waitingForClaude bool
 }
 
 func (m *MainModel) Init() tea.Cmd {
 	m.chat = newChatModel()
 	m.conversation = []string{}
+	m.waitingForClaude = false
 	return nil
 }
 
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// Handle Ctrl+C (tea.KeyMsg with Ctrl+C)
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
 			m.quitting = true
 			return m, tea.Quit
 		}
-		// On enter, append textarea content to conversation
-		if m.chat != nil && msg.Type == tea.KeyEnter {
+		if m.chat != nil && msg.Type == tea.KeyEnter && !m.waitingForClaude {
 			input := m.chat.textarea.Value()
 			if input != "" {
-				m.conversation = append(m.conversation, input)
+				m.conversation = append(m.conversation, "You: "+input)
 				m.chat.textarea.Reset()
-				// Update viewport content
 				m.chat.viewport.SetContent(joinConversation(m.conversation))
+				m.waitingForClaude = true
+				return m, m.sendToClaude(input)
 			}
 		}
+	case claudeResponseMsg:
+		m.waitingForClaude = false
+		if msg.Err != nil {
+			m.conversation = append(m.conversation, "Claude (error): "+msg.Err.Error())
+		} else {
+			m.conversation = append(m.conversation, "Claude: "+msg.Text)
+		}
+		m.chat.viewport.SetContent(joinConversation(m.conversation))
 	}
-	// Forward updates to chat sub-model for now
 	if m.chat != nil {
 		updatedModel, cmd := m.chat.Update(msg)
 		m.chat = updatedModel.(*chatModel)
 		return m, cmd
 	}
 	return m, nil
+}
+
+func (m *MainModel) sendToClaude(input string) tea.Cmd {
+	return func() tea.Msg {
+		if m.Agent == nil {
+			return claudeResponseMsg{Err: context.DeadlineExceeded}
+		}
+		ctx := context.Background()
+		resp, err := m.Agent.RunInference(ctx, input)
+		if err != nil {
+			return claudeResponseMsg{Err: err}
+		}
+		return claudeResponseMsg{Text: resp}
+	}
 }
 
 func (m *MainModel) View() string {
@@ -65,8 +94,6 @@ func joinConversation(conv []string) string {
 	}
 	return result
 }
-
-// Placeholder structs for compilation
 
 type codeviewModel struct{}
 type sidebarModel struct{}

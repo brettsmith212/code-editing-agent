@@ -62,7 +62,7 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
   - **Step Dependencies**: Step 5
   - **User Instructions**: None
 
-- [ ] **Step 8: Integrate agent logic for sending messages**
+- [x] **Step 8: Integrate agent logic for sending messages**
   - **Task**: Implement logic in the main model to send user messages to Claude using `tea.Cmd` for asynchronous API calls, update conversation history with responses, and manage state transitions (e.g., `waitingForInput`, `waitingForClaude`).
   - **Files**:
     - `models/main.go`: Add `tea.Cmd` for `agent.RunInference`, handle custom `claudeResponseMsg`, and update `conversation`

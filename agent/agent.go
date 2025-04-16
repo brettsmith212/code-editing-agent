@@ -27,6 +27,24 @@ func NewAgent(
 	}
 }
 
+// Expose RunInference for use in Bubble Tea model
+func (a *Agent) RunInference(ctx context.Context, userInput string) (string, error) {
+	// For now, send as a single-message conversation
+	messageParam := anthropic.NewUserMessage(anthropic.NewTextBlock(userInput))
+	conversation := []anthropic.MessageParam{messageParam}
+	resp, err := a.runInference(ctx, conversation)
+	if err != nil {
+		return "", err
+	}
+	// Extract Claude's text response (first text block)
+	for _, content := range resp.Content {
+		if content.Type == "text" {
+			return content.Text, nil
+		}
+	}
+	return "[No Claude response]", nil
+}
+
 func (a *Agent) Run(ctx context.Context) error {
 	conversation := []anthropic.MessageParam{}
 
