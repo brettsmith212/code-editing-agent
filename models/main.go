@@ -54,7 +54,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if input != "" {
 				m.conversation = append(m.conversation, "You: "+input)
 				m.chat.textarea.Reset()
-				m.chat.viewport.SetContent(joinConversation(m.conversation))
+				m.chat.AddMessage("User", input)
 				m.waitingForClaude = true
 				return m, m.sendToClaude(input)
 			}
@@ -63,10 +63,11 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.waitingForClaude = false
 		if msg.Err != nil {
 			m.conversation = append(m.conversation, "Claude (error): "+msg.Err.Error())
+			m.chat.AddMessage("Claude (error)", msg.Err.Error())
 		} else {
 			m.conversation = append(m.conversation, "Claude: "+msg.Text)
+			m.chat.AddMessage("Claude", msg.Text)
 		}
-		m.chat.viewport.SetContent(joinConversation(m.conversation))
 	}
 	if m.chat != nil {
 		updatedModel, cmd := m.chat.Update(msg)

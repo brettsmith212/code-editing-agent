@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -124,11 +125,77 @@ func (c *chatModel) View() string {
 }
 
 func (c *chatModel) formatMessages() string {
-	var content string
-	for _, msg := range c.messages {
-		content += msg + "\n"
+	var formattedContent strings.Builder
+	
+	// Calculate the content width (accounting for padding and borders)
+	contentWidth := c.viewport.Width - 4
+	if contentWidth < 10 {
+		contentWidth = 10 // Minimum reasonable width
 	}
-	return content
+	
+	for _, msg := range c.messages {
+		// Split the message into parts (e.g., "User: Hello")
+		parts := strings.SplitN(msg, ": ", 2)
+		if len(parts) != 2 {
+			// If not in expected format, just add the message
+			formattedContent.WriteString(wrapText(msg, contentWidth))
+			formattedContent.WriteString("\n\n")
+			continue
+		}
+		
+		// Get the sender and content
+		sender, content := parts[0], parts[1]
+		
+		// Add the sender with formatting
+		if sender == "User" {
+			formattedContent.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("69")).Render(sender) + ": ")
+		} else {
+			formattedContent.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("176")).Render(sender) + ": ")
+		}
+		
+		// Wrap the content text and add it
+		wrappedContent := wrapText(content, contentWidth)
+		formattedContent.WriteString(wrappedContent)
+		formattedContent.WriteString("\n\n") // Add space between messages
+	}
+	
+	return formattedContent.String()
+}
+
+func wrapText(text string, width int) string {
+	// Handle empty text
+	if text == "" {
+		return ""
+	}
+	
+	var result strings.Builder
+	
+	// Split the text into words
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return ""
+	}
+	
+	// Start with the first word
+	lineLength := len(words[0])
+	result.WriteString(words[0])
+	
+	// Add the rest of the words with wrapping
+	for _, word := range words[1:] {
+		// If adding this word would exceed width, add a newline
+		if lineLength+len(word)+1 > width {
+			result.WriteString("\n")
+			result.WriteString(word)
+			lineLength = len(word)
+		} else {
+			// Otherwise add a space and the word
+			result.WriteString(" ")
+			result.WriteString(word)
+			lineLength += len(word) + 1
+		}
+	}
+	
+	return result.String()
 }
 
 // AddAIMessage adds an AI response to the chat and logs it
@@ -136,4 +203,19 @@ func (c *chatModel) AddAIMessage(content string) {
 	logger.LogMessage("AI", content)
 	c.messages = append(c.messages, "AI: "+content)
 	c.viewport.SetContent(c.formatMessages())
+}
+
+// AddMessage adds a message to the chat with the given sender and content
+func (c *chatModel) AddMessage(sender, content string) {
+	// Log the message
+	logger.LogMessage(sender, content)
+	
+	// Add to messages
+	c.messages = append(c.messages, sender+": "+content)
+	
+	// Update viewport content with formatted messages
+	c.viewport.SetContent(c.formatMessages())
+	
+	// Scroll to the bottom to show the latest message
+	c.viewport.GotoBottom()
 }
