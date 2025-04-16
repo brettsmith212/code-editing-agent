@@ -168,29 +168,34 @@ func (m *MainModel) View() string {
 		rightPanel = "Chat"
 	}
 
-	// Highlight focused pane with properly sized borders
-	// Use a simpler approach with fewer calculations
+	// Always draw borders on both panels, but only highlight the focused one
+	// This ensures content doesn't move when toggling focus
+	
+	// Base styles with consistent borders and padding for both panels
 	leftStyle := lipgloss.NewStyle().
 		Width(leftPanelWidth - 2). // Account for border width
-		Height(usableHeight)       // Set a fixed height
+		Height(usableHeight).      // Set a fixed height
+		BorderStyle(lipgloss.NormalBorder()). // Always have borders
+		Padding(0, 1) // Consistent padding
 		
 	rightStyle := lipgloss.NewStyle().
 		Width(rightPanelWidth - 2). // Account for border width
-		Height(usableHeight)        // Set a fixed height
+		Height(usableHeight).       // Set a fixed height
+		BorderStyle(lipgloss.NormalBorder()). // Always have borders
+		Padding(0, 1) // Consistent padding
 	
-	// Apply borders based on focus
+	// Set border color based on focus - use a neutral color for unfocused panels
+	// and highlight color for focused panel
+	unfocusedBorderColor := lipgloss.Color("240") // Subtle gray
+	focusedBorderColor := lipgloss.Color("69")    // Highlight color
+	
+	// Apply appropriate border colors based on focus
 	if m.focusedPane == "sidebar" {
-		leftStyle = leftStyle.
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("69")).
-			Padding(0, 1)
-	}
-	
-	if m.focusedPane == "chat" {
-		rightStyle = rightStyle.
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("69")).
-			Padding(0, 1)
+		leftStyle = leftStyle.BorderForeground(focusedBorderColor)
+		rightStyle = rightStyle.BorderForeground(unfocusedBorderColor)
+	} else {
+		leftStyle = leftStyle.BorderForeground(unfocusedBorderColor)
+		rightStyle = rightStyle.BorderForeground(focusedBorderColor)
 	}
 
 	// Force a space between panels
