@@ -142,8 +142,9 @@ func (m *MainModel) View() string {
 		rightPanelWidth = 40
 	}
 	
-	// Calculate usable height (leave some space at the top and bottom)
-	usableHeight := m.height - 4 // Reserve space for top margin and borders
+	// Calculate usable height - make sure both panels use the same exact height
+	// -2 for top margin, -2 for borders (top and bottom)
+	usableHeight := m.height - 4
 
 	// Create left panel: sidebar (if present) + codeview (if present)
 	var leftPanel string
@@ -174,13 +175,13 @@ func (m *MainModel) View() string {
 	// Base styles with consistent borders and padding for both panels
 	leftStyle := lipgloss.NewStyle().
 		Width(leftPanelWidth - 2). // Account for border width
-		Height(usableHeight).      // Set a fixed height
+		Height(usableHeight).      // Set a fixed height for consistency
 		BorderStyle(lipgloss.NormalBorder()). // Always have borders
 		Padding(0, 1) // Consistent padding
 		
 	rightStyle := lipgloss.NewStyle().
 		Width(rightPanelWidth - 2). // Account for border width
-		Height(usableHeight).       // Set a fixed height
+		Height(usableHeight).       // Same fixed height as left panel
 		BorderStyle(lipgloss.NormalBorder()). // Always have borders
 		Padding(0, 1) // Consistent padding
 	

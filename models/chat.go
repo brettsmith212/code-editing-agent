@@ -71,8 +71,9 @@ func (c *chatModel) updateSize(width, height int) {
 		contentWidth = 20
 	}
 	
-	// Adjust viewport height to leave space for input
-	viewportHeight := height - 4 // Space for textarea and some padding
+	// Set viewport height to fill the available space
+	// Adjust to leave just enough room for textarea (1 line + border)
+	viewportHeight := height - 3 // Space for textarea and some padding
 	if viewportHeight < 5 {      // Minimum reasonable height
 		viewportHeight = 5
 	}

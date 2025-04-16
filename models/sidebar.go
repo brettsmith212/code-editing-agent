@@ -79,12 +79,14 @@ func (s *sidebarModel) updateSize(width, height int) {
 		contentWidth = 20
 	}
 	
-	// Set height to match chat viewport's calculation
-	viewportHeight := height - 4 // Match chat viewport's calculation
+	// Set height to fill available space, matching chat viewport's calculation
+	// Account for title and border spacing
+	viewportHeight := height
 	if viewportHeight < 5 {      // Minimum reasonable height
 		viewportHeight = 5
 	}
 	
+	// Update the list size to fill the full available space
 	s.list.SetSize(contentWidth, viewportHeight)
 }
 
