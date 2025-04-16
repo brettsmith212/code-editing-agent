@@ -63,25 +63,26 @@ func newChatModel() *chatModel {
 func (c *chatModel) updateSize(width, height int) {
 	c.width = width
 	c.height = height
-
+	
 	// Adjust width for padding and borders
 	contentWidth := width - 6 // Account for padding and borders
 	if contentWidth < 20 {    // Minimum reasonable width
 		contentWidth = 20
 	}
-
+	
 	// Adjust viewport height to leave space for input
 	viewportHeight := height - 4 // Space for textarea and some padding
 	if viewportHeight < 5 {      // Minimum reasonable height
 		viewportHeight = 5
 	}
-
+	
 	c.textarea.SetWidth(contentWidth)
 	c.viewport.Width = contentWidth
 	c.viewport.Height = viewportHeight
-
-	// Update the content to fit the new size
+	
+	// Set viewport options for better rendering
 	c.viewport.SetContent(c.formatMessages())
+	c.viewport.YPosition = 0
 }
 
 func (c *chatModel) Init() tea.Cmd {
@@ -128,7 +129,8 @@ func (c *chatModel) formatMessages() string {
 	var formattedContent strings.Builder
 	
 	// Calculate the content width (accounting for padding and borders)
-	contentWidth := c.viewport.Width - 4
+	// Subtract more to ensure text doesn't get cut off
+	contentWidth := c.viewport.Width - 6
 	if contentWidth < 10 {
 		contentWidth = 10 // Minimum reasonable width
 	}
@@ -153,15 +155,39 @@ func (c *chatModel) formatMessages() string {
 			formattedContent.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("176")).Render(sender) + ": ")
 		}
 		
+		// Account for the prefix in our width calculation
+		// We have to subtract the length of the prefix from our available width
+		prefixLen := len(sender) + 2 // +2 for ": "
+		adjustedWidth := contentWidth
+		if prefixLen < contentWidth {
+			adjustedWidth = contentWidth - prefixLen
+		}
+		
 		// Wrap the content text and add it
-		wrappedContent := wrapText(content, contentWidth)
-		formattedContent.WriteString(wrappedContent)
+		wrappedContent := wrapText(content, adjustedWidth)
+		
+		// For the first line, we'll use it as is, but for subsequent lines
+		// we need to add proper indentation to align with the first line's content
+		lines := strings.Split(wrappedContent, "\n")
+		if len(lines) > 0 {
+			formattedContent.WriteString(lines[0])
+			
+			// Add proper indentation for subsequent lines
+			if len(lines) > 1 {
+				indent := strings.Repeat(" ", prefixLen)
+				for _, line := range lines[1:] {
+					formattedContent.WriteString("\n" + indent + line)
+				}
+			}
+		}
+		
 		formattedContent.WriteString("\n\n") // Add space between messages
 	}
 	
 	return formattedContent.String()
 }
 
+// wrapText wraps text at the given width, breaking long words if necessary
 func wrapText(text string, width int) string {
 	// Handle empty text
 	if text == "" {
@@ -176,26 +202,70 @@ func wrapText(text string, width int) string {
 		return ""
 	}
 	
-	// Start with the first word
-	lineLength := len(words[0])
-	result.WriteString(words[0])
+	lineLength := 0
+	isFirstWord := true
 	
-	// Add the rest of the words with wrapping
-	for _, word := range words[1:] {
-		// If adding this word would exceed width, add a newline
-		if lineLength+len(word)+1 > width {
-			result.WriteString("\n")
-			result.WriteString(word)
-			lineLength = len(word)
+	// Process each word
+	for _, word := range words {
+		wordLen := len(word)
+		
+		// If this word is too long for a line by itself, we need to break it
+		if wordLen > width {
+			// If not the first word on the line, start a new line
+			if !isFirstWord {
+				result.WriteString("\n")
+				lineLength = 0
+			}
+			
+			// Break the long word into chunks
+			for i := 0; i < wordLen; i += width {
+				end := i + width
+				if end > wordLen {
+					end = wordLen
+				}
+				
+				// Add the chunk
+				result.WriteString(word[i:end])
+				
+				// Add a newline if there's more of this word to come
+				if end < wordLen {
+					result.WriteString("-\n")
+				}
+			}
+			lineLength = wordLen % width
+			if lineLength == 0 && wordLen > 0 {
+				lineLength = width
+			}
 		} else {
-			// Otherwise add a space and the word
-			result.WriteString(" ")
-			result.WriteString(word)
-			lineLength += len(word) + 1
+			// Normal word that fits on a line
+			if lineLength+wordLen+(1-boolToInt(isFirstWord)) > width {
+				// Word won't fit on current line, start a new one
+				result.WriteString("\n")
+				result.WriteString(word)
+				lineLength = wordLen
+			} else {
+				// Word fits on current line
+				if !isFirstWord {
+					result.WriteString(" ")
+					lineLength++
+				}
+				result.WriteString(word)
+				lineLength += wordLen
+			}
 		}
+		
+		isFirstWord = false
 	}
 	
 	return result.String()
+}
+
+// boolToInt converts a boolean to an integer (1 for true, 0 for false)
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // AddAIMessage adds an AI response to the chat and logs it
@@ -216,6 +286,6 @@ func (c *chatModel) AddMessage(sender, content string) {
 	// Update viewport content with formatted messages
 	c.viewport.SetContent(c.formatMessages())
 	
-	// Scroll to the bottom to show the latest message
+	// Make sure we scroll to the bottom
 	c.viewport.GotoBottom()
 }
