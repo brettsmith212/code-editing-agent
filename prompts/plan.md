@@ -47,14 +47,14 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
   - **Step Dependencies**: Step 4
   - **User Instructions**: None
 
-- [ ] **Step 6: Style chat interface with Lip Gloss**
+- [x] **Step 6: Style chat interface with Lip Gloss**
   - **Task**: Apply Lip Gloss styles to the chat input and viewport for a web-like aesthetic (e.g., borders, padding, colors).
   - **Files**:
     - `models/chat.go`: Add `lipgloss.Style` definitions and apply to `textarea` and `viewport` rendering
   - **Step Dependencies**: Step 5
   - **User Instructions**: None
 
-- [ ] **Step 7: Implement conversation history**
+- [x] **Step 7: Implement conversation history**
   - **Task**: Modify the main model to maintain conversation history and update the chat sub-model to render it in the viewport.
   - **Files**:
     - `models/main.go`: Add logic to append messages to `conversation` field
