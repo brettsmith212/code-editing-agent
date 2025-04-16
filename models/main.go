@@ -26,11 +26,24 @@ func (m *MainModel) Init() tea.Cmd {
 	m.chat = newChatModel()
 	m.conversation = []string{}
 	m.waitingForClaude = false
-	return nil
+	
+	cmds := []tea.Cmd{
+		tea.EnterAltScreen,
+	}
+	
+	// Get initial window size
+	return tea.Batch(cmds...)
 }
 
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// First pass the size message to the chat model
+		if m.chat != nil {
+			updatedModel, _ := m.chat.Update(msg)
+			m.chat = updatedModel.(*chatModel)
+		}
+		return m, nil
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
 			m.quitting = true

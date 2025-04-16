@@ -27,7 +27,14 @@ func main() {
 	m := &models.MainModel{
 		Agent: myAgent,
 	}
-	p := tea.NewProgram(m)
+	
+	// Create a program with the full terminal option
+	p := tea.NewProgram(
+		m,
+		tea.WithAltScreen(),       // Use alternate screen buffer
+		tea.WithMouseCellMotion(), // Enable mouse support
+	)
+	
 	if err := p.Start(); err != nil {
 		log.Fatal(err)
 	}

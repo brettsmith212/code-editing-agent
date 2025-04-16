@@ -6,39 +6,85 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
+	"fmt"
 )
 
 var (
-	chatBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("63"))
-	viewportStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("99")).Height(12)
+	chatBorderStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
+	viewportStyle   = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
 )
 
 type chatModel struct {
 	textarea textarea.Model
 	viewport viewport.Model
 	messages []string
+	width    int
+	height   int
 }
 
 func newChatModel() *chatModel {
 	ta := textarea.New()
 	ta.Placeholder = "Type your message..."
-	ta.Prompt = "> "
+	ta.Prompt = ""
+	ta.ShowLineNumbers = false
 	ta.Focus()
 
-	ta.SetWidth(60)
-	ta.SetHeight(3)
+	// Initial default size, will be updated on WindowSizeMsg
+	initialWidth := 100
+	initialHeight := 20
 
-	vp := viewport.New(60, 12)
+	ta.SetWidth(initialWidth)
+	ta.SetHeight(1)
+
+	// Remove highlighting and make it plain
+	ta.FocusedStyle.Base = lipgloss.NewStyle().
+		BorderForeground(lipgloss.Color("69")).
+		BorderStyle(lipgloss.RoundedBorder())
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.FocusedStyle.Text = lipgloss.NewStyle()
+	ta.BlurredStyle.Base = lipgloss.NewStyle().
+		BorderStyle(lipgloss.RoundedBorder())
+	ta.BlurredStyle.Text = lipgloss.NewStyle()
+
+	vp := viewport.New(initialWidth, initialHeight-3) // Leave space for the textarea
 	vp.Style = viewportStyle
 
 	return &chatModel{
 		textarea: ta,
 		viewport: vp,
 		messages: make([]string, 0),
+		width:    initialWidth,
+		height:   initialHeight,
 	}
 }
 
+// updateSize updates the component sizes based on the terminal dimensions
+func (c *chatModel) updateSize(width, height int) {
+	c.width = width
+	c.height = height
+
+	// Adjust width for padding and borders
+	contentWidth := width - 6 // Account for padding and borders
+	if contentWidth < 20 {    // Minimum reasonable width
+		contentWidth = 20
+	}
+
+	// Adjust viewport height to leave space for input
+	viewportHeight := height - 4 // Space for textarea and some padding
+	if viewportHeight < 5 {      // Minimum reasonable height
+		viewportHeight = 5
+	}
+
+	c.textarea.SetWidth(contentWidth)
+	c.viewport.Width = contentWidth
+	c.viewport.Height = viewportHeight
+
+	// Update the content to fit the new size
+	c.viewport.SetContent(c.formatMessages())
+}
+
 func (c *chatModel) Init() tea.Cmd {
+	// We'll let the main program handle initial window size
 	return nil
 }
 
@@ -46,6 +92,10 @@ func (c *chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// Handle window resize
+		c.updateSize(msg.Width, msg.Height)
+		return c, nil
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter && !msg.Alt {
 			userMsg := c.textarea.Value()
@@ -66,8 +116,10 @@ func (c *chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c *chatModel) View() string {
-	return chatBorderStyle.Render(
-		c.viewport.View()+"\n"+c.textarea.View(),
+	// Create a layout that takes the full available space
+	return fmt.Sprintf("%s\n%s", 
+		c.viewport.View(),
+		c.textarea.View(),
 	)
 }
 
