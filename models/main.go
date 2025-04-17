@@ -3,6 +3,7 @@ package models
 import (
 	"agent/agent"
 	"context"
+	"io/ioutil"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,6 +13,11 @@ import (
 type claudeResponseMsg struct {
 	Text string
 	Err  error
+}
+
+// openFileMsg is used to deliver file open requests.
+type openFileMsg struct {
+	FileName string
 }
 
 // MainModel is the root model for the Bubbletea application.
@@ -27,6 +33,7 @@ type MainModel struct {
 	width        int    // Terminal width
 	height       int    // Terminal height
 	focusedPane  string // "sidebar" or "chat"
+	sidebarShowingFile bool
 }
 
 // Init sets up the initial state for the main model.
@@ -35,6 +42,8 @@ func (m *MainModel) Init() tea.Cmd {
 	m.conversation = []string{}
 	m.waitingForClaude = false
 	m.sidebar = newSidebarModelFromDir(".")
+	// Initialize codeview with default width and height (will be updated on WindowSizeMsg)
+	m.codeview = NewCodeViewModel(80, 20)
 	m.focusedPane = "chat"
 
 	cmds := []tea.Cmd{
@@ -64,18 +73,26 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Use consistent height for both panels
 		panelHeight := m.height - 2 // Reserve space for margins
 
-		// Update both panels with their respective sizes
 		if m.chat != nil {
 			m.chat.updateSize(rightPanelWidth, panelHeight)
 		}
 		if m.sidebar != nil {
 			m.sidebar.updateSize(leftPanelWidth, panelHeight)
 		}
+		if m.codeview != nil {
+			m.codeview.viewport.Width = leftPanelWidth - 2
+			m.codeview.viewport.Height = panelHeight - 2
+		}
 		return m, nil
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
 			m.quitting = true
 			return m, tea.Quit
+		}
+		if m.sidebarShowingFile && msg.Type == tea.KeyEsc {
+			// Escape closes file view and returns to sidebar
+			m.sidebarShowingFile = false
+			return m, nil
 		}
 		if msg.Type == tea.KeyTab {
 			if m.focusedPane == "chat" {
@@ -85,7 +102,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		if m.chat != nil && msg.Type == tea.KeyEnter && !m.waitingForClaude {
+		if msg.Type == tea.KeyEnter && !m.waitingForClaude {
 			input := m.chat.textarea.Value()
 			if input != "" {
 				m.conversation = append(m.conversation, "You: "+input)
@@ -95,6 +112,14 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.sendToClaude(input)
 			}
 		}
+	case openFileMsg:
+		// Read file and open in codeview (in sidebar panel)
+		content, err := ioutil.ReadFile(msg.FileName)
+		if err == nil && m.codeview != nil {
+			m.codeview.OpenTab(msg.FileName, string(content))
+			m.sidebarShowingFile = true
+		}
+		return m, nil
 	case claudeResponseMsg:
 		m.waitingForClaude = false
 		if msg.Err != nil {
@@ -106,9 +131,9 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	// Forward input to focused pane
-	if m.focusedPane == "sidebar" && m.sidebar != nil {
-		m.sidebar.Update(msg)
-		return m, nil
+	if m.focusedPane == "sidebar" && m.sidebar != nil && !m.sidebarShowingFile {
+		cmd := m.sidebar.Update(msg)
+		return m, cmd
 	}
 	if m.focusedPane == "chat" && m.chat != nil {
 		updatedModel, cmd := m.chat.Update(msg)
@@ -153,22 +178,17 @@ func (m *MainModel) View() string {
 	}
 
 	// Calculate usable height - make sure both panels use the same exact height
-	// -2 for top margin, -2 for borders (top and bottom)
 	usableHeight := m.height - 4
 
 	// Ensure both panels have exactly the same height
 	exactHeight := usableHeight - 2 // Account for borders
 
-	// Create left panel: sidebar (if present) + codeview (if present)
+	// Create left panel: either sidebar or codeview (not both)
 	var leftPanel string
-	if m.sidebar != nil {
-		leftPanel += m.sidebar.View()
-	}
-	if m.codeview != nil {
-		if leftPanel != "" {
-			leftPanel += "\n"
-		}
-		leftPanel += "[CodeView]"
+	if m.sidebarShowingFile && m.codeview != nil && len(m.codeview.tabs) > 0 {
+		leftPanel = m.codeview.View()
+	} else if m.sidebar != nil {
+		leftPanel = m.sidebar.View()
 	}
 	if leftPanel == "" {
 		leftPanel = " " // Empty panel fallback
@@ -235,6 +255,3 @@ func joinConversation(conv []string) string {
 	}
 	return result
 }
-
-// codeviewModel is a placeholder for future code view functionality.
-type codeviewModel struct{}

@@ -100,14 +100,14 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
   - **Step Dependencies**: Step 9
   - **User Instructions**: None
 
-- [ ] **Step 13: Integrate code view into main model**
+- [x] **Step 13: Integrate code view into main model**
   - **Task**: Add the code view sub-model to the main model and render it in the left panel below the sidebar.
   - **Files**:
     - `models/main.go`: Modify to initialize `codeview` field and include `m.codeview.View()` in left panel
   - **Step Dependencies**: Step 12
   - **User Instructions**: None
 
-- [ ] **Step 14: Enable opening files from sidebar**
+- [x] **Step 14: Enable opening files from sidebar**
   - **Task**: Implement logic to open files selected in the sidebar into code view tabs, reading file contents and updating the viewport.
   - **Files**:
     - `models/sidebar.go`: Add keybinding to trigger file opening

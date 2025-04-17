@@ -107,15 +107,23 @@ func (m *sidebarModel) updateSize(width, height int) {
 }
 
 // Update handles Bubbletea messages for the sidebar panel.
-func (m *sidebarModel) Update(msg any) {
+func (m *sidebarModel) Update(msg any) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		// Handle window resize
 		m.updateSize(msg.Width, msg.Height)
-	default:
-		l, _ := m.list.Update(msg)
-		m.list = l
+	case tea.KeyMsg:
+		if msg.Type == tea.KeyEnter {
+			item := m.list.SelectedItem()
+			if file, ok := item.(fileItem); ok {
+				return func() tea.Msg {
+					return openFileMsg{FileName: file.name}
+				}
+			}
+		}
 	}
+	l, cmd := m.list.Update(msg)
+	m.list = l
+	return cmd
 }
 
 // View renders the sidebar panel with a custom title and vertical padding.
