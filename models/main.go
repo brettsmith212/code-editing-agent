@@ -3,6 +3,7 @@ package models
 import (
 	"agent/agent"
 	"context"
+	"encoding/json"
 	"io/ioutil"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,6 +21,28 @@ type openFileMsg struct {
 	FileName string
 }
 
+// toolResultMsg is used to deliver tool execution results asynchronously.
+type toolResultMsg struct {
+	ID     string
+	Name   string
+	Result string
+	Err    error
+}
+
+type ToolStatus struct {
+	Name   string
+	Status string // "pending", "done", "error"
+	Result string
+	Err    error
+}
+
+// toolRequest is used to dispatch tool requests asynchronously.
+type toolRequest struct {
+	ID   string
+	Name string
+	Args map[string]interface{}
+}
+
 // MainModel is the root model for the Bubbletea application.
 type MainModel struct {
 	chat               *chatModel
@@ -33,6 +56,7 @@ type MainModel struct {
 	height             int    // Terminal height
 	focusedPane        string // "sidebar" or "chat"
 	sidebarShowingFile bool
+	inFlightTools      map[string]ToolStatus // Track running tool commands
 }
 
 // Init sets up the initial state for the main model.
@@ -44,6 +68,7 @@ func (m *MainModel) Init() tea.Cmd {
 	// Initialize codeview with default width and height (will be updated on WindowSizeMsg)
 	m.codeview = NewCodeViewModel(80, 20)
 	m.focusedPane = "chat"
+	m.inFlightTools = make(map[string]ToolStatus)
 
 	cmds := []tea.Cmd{
 		tea.EnterAltScreen,
@@ -144,6 +169,28 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.conversation = append(m.conversation, "Claude: "+msg.Text)
 			m.chat.AddMessage("Claude", msg.Text)
 		}
+	case toolRequest:
+		// Mark as pending
+		m.inFlightTools[msg.ID] = ToolStatus{Name: msg.Name, Status: "pending"}
+		return m, m.executeToolAsync(msg)
+	case toolResultMsg:
+		status := "done"
+		if msg.Err != nil {
+			status = "error"
+		}
+		m.inFlightTools[msg.ID] = ToolStatus{Name: msg.Name, Status: status, Result: msg.Result, Err: msg.Err}
+		if msg.Name == "read_file" && msg.Err == nil {
+			// Show file content in codeview
+			if m.codeview != nil {
+				m.codeview.OpenTab(msg.ID, msg.Result)
+				m.sidebarShowingFile = true
+			}
+		}
+		if msg.Err != nil && m.codeview != nil {
+			m.codeview.OpenTab(msg.ID, "[ERROR] "+msg.Err.Error())
+			m.sidebarShowingFile = true
+		}
+		return m, nil
 	}
 	// Forward input to focused pane
 	if m.focusedPane == "sidebar" && m.sidebar != nil && !m.sidebarShowingFile {
@@ -170,6 +217,23 @@ func (m *MainModel) sendToClaude(input string) tea.Cmd {
 			return claudeResponseMsg{Err: err}
 		}
 		return claudeResponseMsg{Text: resp}
+	}
+}
+
+// executeToolAsync executes a tool asynchronously and returns a command that will deliver the result.
+func (m *MainModel) executeToolAsync(req toolRequest) tea.Cmd {
+	return func() tea.Msg {
+		if m.Agent == nil {
+			return toolResultMsg{ID: req.ID, Name: req.Name, Err: context.DeadlineExceeded}
+		}
+		// Marshal args to JSON
+		input, err := json.Marshal(req.Args)
+		if err != nil {
+			return toolResultMsg{ID: req.ID, Name: req.Name, Err: err}
+		}
+		// Call agent's executeTool (returns string, error)
+		result, err := m.Agent.ExecuteTool(req.Name, input)
+		return toolResultMsg{ID: req.ID, Name: req.Name, Result: result, Err: err}
 	}
 }
 

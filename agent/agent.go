@@ -90,6 +90,16 @@ func (a *Agent) Run(ctx context.Context) error {
 	return nil
 }
 
+// ExecuteTool is a public wrapper for tool execution, allowing external packages to call tools and get (string, error).
+func (a *Agent) ExecuteTool(name string, input json.RawMessage) (string, error) {
+	for _, toolDef := range a.tools {
+		if toolDef.Name == name {
+			return toolDef.Function(input)
+		}
+	}
+	return "", fmt.Errorf("tool not found: %s", name)
+}
+
 func (a *Agent) executeTool(id, name string, input json.RawMessage) anthropic.ContentBlockParamUnion {
 	var toolDef tools.ToolDefinition
 	var found bool

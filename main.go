@@ -21,7 +21,11 @@ func main() {
 	defer logger.Close()
 
 	client := anthropic.NewClient()
-	toolDefs := []tools.ToolDefinition{ /* Add tool definitions here if needed */ }
+	toolDefs := []tools.ToolDefinition{
+		tools.ReadFileDefinition,
+		tools.EditFileDefinition,
+		tools.ListFilesDefinition,
+	}
 	myAgent := agent.NewAgent(&client, nil, toolDefs)
 
 	m := &models.MainModel{
