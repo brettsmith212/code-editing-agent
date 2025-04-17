@@ -55,7 +55,11 @@ func newSidebarModelFromDir(dir string) *sidebarModel {
 	items := make([]list.Item, 0, len(entries))
 	if err == nil {
 		for _, entry := range entries {
-			items = append(items, fileItem{name: entry.Name()})
+			name := entry.Name()
+			if entry.IsDir() {
+				name += "/"
+			}
+			items = append(items, fileItem{name: name})
 		}
 	} else {
 		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
