@@ -1,31 +1,35 @@
 package models
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-	"context"
 	"agent/agent"
+	"context"
+
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-type claudeResponseMsg struct{
+// claudeResponseMsg is used to deliver responses from Claude (or errors) asynchronously.
+type claudeResponseMsg struct {
 	Text string
-	Err error
+	Err  error
 }
 
+// MainModel is the root model for the Bubbletea application.
 type MainModel struct {
-	chat        *chatModel
-	codeview    *codeviewModel
-	sidebar     *sidebarModel
-	Agent       *agent.Agent
+	chat         *chatModel
+	codeview     *codeviewModel
+	sidebar      *sidebarModel
+	Agent        *agent.Agent
 	conversation []string // Conversation history as plain strings for now
-	state       string
-	quitting    bool
+	state        string
+	quitting     bool
 	waitingForClaude bool
-	width       int // Terminal width
-	height      int // Terminal height
-	focusedPane string // "sidebar" or "chat"
+	width        int    // Terminal width
+	height       int    // Terminal height
+	focusedPane  string // "sidebar" or "chat"
 }
 
+// Init sets up the initial state for the main model.
 func (m *MainModel) Init() tea.Cmd {
 	m.chat = newChatModel()
 	m.conversation = []string{}
@@ -36,11 +40,12 @@ func (m *MainModel) Init() tea.Cmd {
 	cmds := []tea.Cmd{
 		tea.EnterAltScreen,
 	}
-	
+
 	// Get initial window size
 	return tea.Batch(cmds...)
 }
 
+// Update handles all Bubbletea messages for the main model.
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -55,10 +60,10 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if rightPanelWidth < 40 {
 			rightPanelWidth = 40
 		}
-		
+
 		// Use consistent height for both panels
 		panelHeight := m.height - 2 // Reserve space for margins
-		
+
 		// Update both panels with their respective sizes
 		if m.chat != nil {
 			m.chat.updateSize(rightPanelWidth, panelHeight)
@@ -113,6 +118,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// sendToClaude sends a user message to Claude and returns a command that will deliver the response asynchronously.
 func (m *MainModel) sendToClaude(input string) tea.Cmd {
 	return func() tea.Msg {
 		if m.Agent == nil {
@@ -127,6 +133,7 @@ func (m *MainModel) sendToClaude(input string) tea.Cmd {
 	}
 }
 
+// View renders the main UI, including both panels and their borders.
 func (m *MainModel) View() string {
 	if m.quitting {
 		return "Goodbye!"
@@ -144,11 +151,11 @@ func (m *MainModel) View() string {
 	if rightPanelWidth < 40 {
 		rightPanelWidth = 40
 	}
-	
+
 	// Calculate usable height - make sure both panels use the same exact height
 	// -2 for top margin, -2 for borders (top and bottom)
 	usableHeight := m.height - 4
-	
+
 	// Ensure both panels have exactly the same height
 	exactHeight := usableHeight - 2 // Account for borders
 
@@ -177,25 +184,25 @@ func (m *MainModel) View() string {
 
 	// Always draw borders on both panels, but only highlight the focused one
 	// This ensures content doesn't move when toggling focus
-	
+
 	// Base styles with consistent borders and padding for both panels
 	leftStyle := lipgloss.NewStyle().
-		Width(leftPanelWidth - 2). // Account for border width
-		Height(exactHeight).      // Set a fixed height for consistency
+		Width(leftPanelWidth-2).              // Account for border width
+		Height(exactHeight).                  // Set a fixed height for consistency
 		BorderStyle(lipgloss.NormalBorder()). // Always have borders
-		Padding(0, 1) // Consistent padding
-		
+		Padding(0, 1)                         // Consistent padding
+
 	rightStyle := lipgloss.NewStyle().
-		Width(rightPanelWidth - 2). // Account for border width
-		Height(exactHeight).       // Same fixed height as left panel
+		Width(rightPanelWidth-2).             // Account for border width
+		Height(exactHeight).                  // Same fixed height as left panel
 		BorderStyle(lipgloss.NormalBorder()). // Always have borders
-		Padding(0, 1) // Consistent padding
-	
+		Padding(0, 1)                         // Consistent padding
+
 	// Set border color based on focus - use a neutral color for unfocused panels
 	// and highlight color for focused panel
 	unfocusedBorderColor := lipgloss.Color("240") // Subtle gray
 	focusedBorderColor := lipgloss.Color("69")    // Highlight color
-	
+
 	// Apply appropriate border colors based on focus
 	if m.focusedPane == "sidebar" {
 		leftStyle = leftStyle.BorderForeground(focusedBorderColor)
@@ -207,7 +214,7 @@ func (m *MainModel) View() string {
 
 	// Force a space between panels
 	spacer := lipgloss.NewStyle().Width(1).Render(" ")
-	
+
 	// Combine panels horizontally
 	row := lipgloss.JoinHorizontal(
 		lipgloss.Top,
@@ -215,11 +222,12 @@ func (m *MainModel) View() string {
 		spacer,
 		rightStyle.Render(rightPanel),
 	)
-	
+
 	// Add a newline at the top to ensure top border is visible
 	return "\n\n" + row // Add extra newline for top margin
 }
 
+// joinConversation joins conversation history into a single string for display.
 func joinConversation(conv []string) string {
 	result := ""
 	for _, line := range conv {
@@ -228,4 +236,5 @@ func joinConversation(conv []string) string {
 	return result
 }
 
+// codeviewModel is a placeholder for future code view functionality.
 type codeviewModel struct{}
