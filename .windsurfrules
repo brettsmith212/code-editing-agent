@@ -15,9 +15,7 @@ It is organized as follows:
 
 ## Testing and Debugging
 
-1. Run `go run main.go` to run the application
-2. User will enter commands to test if the application is working
-3. Tail logs in the `logs` directory to view the chat history and debug issues
+1. Tail logs in the `logs` directory to view the chat history and debug issues from my session I am running.
 
 ## Rules for Building Effective AI Agents
 

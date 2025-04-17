@@ -13,7 +13,7 @@ type codeviewModel struct {
 
 // NewCodeViewModel creates a new codeviewModel with default settings.
 func NewCodeViewModel(width, height int) *codeviewModel {
-	vp := viewport.New(width, height)
+	vp := viewport.New(LeftPanelInitialWidth, LeftPanelInitialHeight)
 	return &codeviewModel{
 		viewport:  vp,
 		tabs:      []string{},
@@ -31,7 +31,7 @@ func (m *codeviewModel) SetTabs(tabs []string, active int) {
 
 // SetFileContent sets the content of the viewport for the active tab with text wrapping.
 func (m *codeviewModel) SetFileContent(content string) {
-	wrappedContent := wrapText(content, m.viewport.Width-2) // Account for borders
+	wrappedContent := wrapText(content, m.viewport.Width-LeftPanelPaddingWidth) // Use shared padding constant
 	m.viewport.SetContent(wrappedContent)
 }
 
@@ -60,6 +60,8 @@ func (m *codeviewModel) OpenTab(filename, content string) {
 		m.activeTab = idx
 	}
 	m.SetFileContent(content)
+	// Ensure height matches left panel (sidebar)
+	m.viewport.Height = LeftPanelInitialHeight
 }
 
 // View renders the code view (viewport + tabs).

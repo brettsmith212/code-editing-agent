@@ -11,17 +11,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	sidebarInitialWidth   = 30
-	sidebarInitialHeight  = 20
-	sidebarPaddingWidth   = 6
-	sidebarMinContentWidth = 20
-	sidebarMinHeight      = 5
-	sidebarTitle          = "Files"
-	sidebarHighlightColor = "69"
-	sidebarUnfocusedColor = "240"
-)
-
 // fileItem represents a file or directory in the sidebar.
 type fileItem struct {
 	name string
@@ -48,7 +37,7 @@ func (d CompactDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	name := item.(fileItem).name
 	style := lipgloss.NewStyle()
 	if index == m.Index() {
-		style = style.Bold(true).Foreground(lipgloss.Color(sidebarHighlightColor))
+		style = style.Bold(true).Foreground(lipgloss.Color(SidebarHighlightColor))
 	}
 	io.WriteString(w, style.Render(name))
 }
@@ -72,16 +61,16 @@ func newSidebarModelFromDir(dir string) *sidebarModel {
 		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
 	}
 
-	l := list.New(items, CompactDelegate{}, sidebarInitialWidth, sidebarInitialHeight)
-	l.Title = sidebarTitle
+	l := list.New(items, CompactDelegate{}, LeftPanelInitialWidth, LeftPanelInitialHeight)
+	l.Title = SidebarTitle
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
-	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(sidebarHighlightColor))
+	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(SidebarHighlightColor))
 
 	return &sidebarModel{
 		list:   l,
-		width:  sidebarInitialWidth,
-		height: sidebarInitialHeight,
+		width:  LeftPanelInitialWidth,
+		height: LeftPanelInitialHeight,
 	}
 }
 
@@ -91,15 +80,15 @@ func (m *sidebarModel) updateSize(width, height int) {
 	m.height = height
 
 	// Adjust width for padding and borders - use the same calculation as chat viewport
-	contentWidth := width - sidebarPaddingWidth // Account for padding and borders
-	if contentWidth < sidebarMinContentWidth {    // Minimum reasonable width
-		contentWidth = sidebarMinContentWidth
+	contentWidth := width - LeftPanelPaddingWidth // Account for padding and borders
+	if contentWidth < LeftPanelMinContentWidth {    // Minimum reasonable width
+		contentWidth = LeftPanelMinContentWidth
 	}
 
 	// Set height to fill available space, matching chat viewport's calculation
 	viewportHeight := height
-	if viewportHeight < sidebarMinHeight { // Minimum reasonable height
-		viewportHeight = sidebarMinHeight
+	if viewportHeight < LeftPanelMinHeight { // Minimum reasonable height
+		viewportHeight = LeftPanelMinHeight
 	}
 
 	// Update the list size to fill the full available space
@@ -129,15 +118,15 @@ func (m *sidebarModel) Update(msg any) tea.Cmd {
 // View renders the sidebar panel with a custom title and vertical padding.
 func (m *sidebarModel) View() string {
 	// Make a custom wrapper to ensure the title always appears
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(sidebarHighlightColor))
-	title := titleStyle.Render(sidebarTitle)
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(SidebarHighlightColor))
+	title := titleStyle.Render(SidebarTitle)
 
 	// Get the list content without the default title
 	content := m.list.View()
 
 	// If the view already has a title, we need to remove it to avoid duplication
 	lines := strings.Split(content, "\n")
-	if len(lines) > 0 && strings.Contains(lines[0], sidebarTitle) {
+	if len(lines) > 0 && strings.Contains(lines[0], SidebarTitle) {
 		// Remove the first line (title) and join the rest
 		content = strings.Join(lines[1:], "\n")
 	}

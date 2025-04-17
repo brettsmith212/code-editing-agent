@@ -2,6 +2,22 @@ package models
 
 import "strings"
 
+// Left panel (sidebar/codeview) shared constants
+const (
+	LeftPanelInitialWidth    = 30
+	LeftPanelInitialHeight   = 20
+	LeftPanelPaddingWidth    = 6
+	LeftPanelMinContentWidth = 20
+	LeftPanelMinHeight       = 5
+)
+
+// Sidebar and left panel formatting constants
+const (
+	SidebarTitle          = "Files"
+	SidebarHighlightColor = "69"
+	SidebarUnfocusedColor = "240"
+)
+
 // wrapText wraps text at the given width, breaking long words if necessary.
 func wrapText(text string, width int) string {
 	if width <= 0 {
