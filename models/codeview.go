@@ -8,7 +8,7 @@ import (
 type codeviewModel struct {
 	viewport  viewport.Model // The viewport for displaying file contents
 	tabs      []string       // Slice of open file paths (or tab names)
-	activeTab int           // Index of the currently active tab
+	activeTab int            // Index of the currently active tab
 }
 
 // NewCodeViewModel creates a new codeviewModel with default settings.
@@ -29,9 +29,10 @@ func (m *codeviewModel) SetTabs(tabs []string, active int) {
 	}
 }
 
-// SetFileContent sets the content of the viewport for the active tab.
+// SetFileContent sets the content of the viewport for the active tab with text wrapping.
 func (m *codeviewModel) SetFileContent(content string) {
-	m.viewport.SetContent(content)
+	wrappedContent := wrapText(content, m.viewport.Width-2) // Account for borders
+	m.viewport.SetContent(wrappedContent)
 }
 
 // ActiveTab returns the name of the currently active tab.
@@ -58,7 +59,7 @@ func (m *codeviewModel) OpenTab(filename, content string) {
 	} else {
 		m.activeTab = idx
 	}
-	m.viewport.SetContent(content)
+	m.SetFileContent(content)
 }
 
 // View renders the code view (viewport + tabs).

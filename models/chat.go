@@ -200,85 +200,11 @@ func (m *chatModel) formatMessages() string {
 					formattedContent.WriteString("\n" + indent + line)
 				}
 			}
+			formattedContent.WriteString("\n\n")
 		}
-
-		formattedContent.WriteString("\n\n") // Add space between messages
 	}
 
 	return formattedContent.String()
-}
-
-// wrapText wraps text at the given width, breaking long words if necessary.
-func wrapText(text string, width int) string {
-	// Handle empty text
-	if text == "" {
-		return ""
-	}
-
-	var result strings.Builder
-
-	// Split the text into words
-	words := strings.Fields(text)
-	if len(words) == 0 {
-		return ""
-	}
-
-	lineLength := 0
-	isFirstWord := true
-
-	// Process each word
-	for _, word := range words {
-		wordLen := len(word)
-
-		// If this word is too long for a line by itself, we need to break it
-		if wordLen > width {
-			// If not the first word on the line, start a new line
-			if !isFirstWord {
-				result.WriteString("\n")
-				lineLength = 0
-			}
-
-			// Break the long word into chunks
-			for i := 0; i < wordLen; i += width {
-				end := i + width
-				if end > wordLen {
-					end = wordLen
-				}
-
-				// Add the chunk
-				result.WriteString(word[i:end])
-
-				// Add a newline if there's more of this word to come
-				if end < wordLen {
-					result.WriteString("-\n")
-				}
-			}
-			lineLength = wordLen % width
-			if lineLength == 0 && wordLen > 0 {
-				lineLength = width
-			}
-		} else {
-			// Normal word that fits on a line
-			if lineLength+wordLen+(1-boolToInt(isFirstWord)) > width {
-				// Word won't fit on current line, start a new one
-				result.WriteString("\n")
-				result.WriteString(word)
-				lineLength = wordLen
-			} else {
-				// Word fits on current line
-				if !isFirstWord {
-					result.WriteString(" ")
-					lineLength++
-				}
-				result.WriteString(word)
-				lineLength += wordLen
-			}
-		}
-
-		isFirstWord = false
-	}
-
-	return result.String()
 }
 
 // boolToInt converts a boolean to an integer (1 for true, 0 for false).
@@ -298,15 +224,15 @@ func (m *chatModel) AddAIMessage(content string) {
 
 // AddMessage adds a message to the chat with the given sender and content.
 func (m *chatModel) AddMessage(sender, content string) {
-	// Log the message
-	logger.LogMessage(sender, content)
-
-	// Add to messages
-	m.messages = append(m.messages, sender+": "+content)
-
-	// Update viewport content with formatted messages
+	prefix := userPrefix
+	switch sender {
+	case "AI":
+		prefix = aiPrefix
+	case "Claude":
+		prefix = claudePrefix
+	case "Claude (error)":
+		prefix = claudeErrorPrefix
+	}
+	m.messages = append(m.messages, prefix+content)
 	m.viewport.SetContent(m.formatMessages())
-
-	// Make sure we scroll to the bottom
-	m.viewport.GotoBottom()
 }
