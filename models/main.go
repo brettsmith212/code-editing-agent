@@ -2,6 +2,7 @@ package models
 
 import (
 	"agent/agent"
+	"agent/logger"
 	"context"
 	"encoding/json"
 	"io/ioutil"
@@ -142,6 +143,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.conversation = append(m.conversation, "You: "+input)
 				m.chat.textarea.Reset()
 				m.chat.AddMessage("User", input)
+				logger.LogMessage("User", input)
 				m.waitingForClaude = true
 				return m, m.sendToClaude(input)
 			}
@@ -165,9 +167,11 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.Err != nil {
 			m.conversation = append(m.conversation, "Claude (error): "+msg.Err.Error())
 			m.chat.AddMessage("Claude (error)", msg.Err.Error())
+			logger.LogMessage("Claude (error)", msg.Err.Error())
 		} else {
 			m.conversation = append(m.conversation, "Claude: "+msg.Text)
 			m.chat.AddMessage("Claude", msg.Text)
+			logger.LogMessage("Claude", msg.Text)
 		}
 	case toolRequest:
 		// Mark as pending
