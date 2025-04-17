@@ -90,9 +90,19 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		if m.sidebarShowingFile && msg.Type == tea.KeyEsc {
-			// Escape closes file view and returns to sidebar
 			m.sidebarShowingFile = false
 			return m, nil
+		}
+		if m.sidebarShowingFile {
+			// Scroll codeview with j/k, arrow keys, and mouse wheel
+			var scrollCmd tea.Cmd
+			switch msg.String() {
+			case "j", "down":
+				m.codeview.viewport.LineDown(1)
+			case "k", "up":
+				m.codeview.viewport.LineUp(1)
+			}
+			return m, scrollCmd
 		}
 		if msg.Type == tea.KeyTab {
 			if m.focusedPane == "chat" {
@@ -111,6 +121,12 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.waitingForClaude = true
 				return m, m.sendToClaude(input)
 			}
+		}
+	case tea.MouseMsg:
+		if m.sidebarShowingFile {
+			// Forward mouse wheel events to codeview viewport
+			_, cmd := m.codeview.viewport.Update(msg)
+			return m, cmd
 		}
 	case openFileMsg:
 		// Read file and open in codeview (in sidebar panel)
