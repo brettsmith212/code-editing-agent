@@ -86,6 +86,7 @@ func (m *sidebarModel) loadDir(dir string) {
 		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
 	}
 	m.list.SetItems(items)
+	m.list.Select(0)
 	m.currentDir = dir
 }
 
