@@ -183,12 +183,14 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			status = "error"
 		}
 		m.inFlightTools[msg.ID] = ToolStatus{Name: msg.Name, Status: status, Result: msg.Result, Err: msg.Err}
-		if msg.Name == "read_file" && msg.Err == nil {
-			// Show file content in codeview
+		if msg.Err == nil {
+			// Show result in codeview if relevant (for read_file, edit_file, list_files, etc.)
 			if m.codeview != nil {
 				m.codeview.OpenTab(msg.ID, msg.Result)
 				m.sidebarShowingFile = true
 			}
+			// Always send tool result back to Claude for follow-up
+			return m, m.sendToClaude(msg.Result)
 		}
 		if msg.Err != nil && m.codeview != nil {
 			m.codeview.OpenTab(msg.ID, "[ERROR] "+msg.Err.Error())
@@ -220,7 +222,16 @@ func (m *MainModel) sendToClaude(input string) tea.Cmd {
 		if err != nil {
 			return claudeResponseMsg{Err: err}
 		}
-		return claudeResponseMsg{Text: resp}
+		// If there are tool uses, dispatch toolRequest for the first one
+		if len(resp.ToolUses) > 0 {
+			tu := resp.ToolUses[0]
+			return toolRequest{ID: tu.ID, Name: tu.Name, Args: tu.Args}
+		}
+		// Otherwise, return the first text response (if any)
+		if len(resp.Texts) > 0 {
+			return claudeResponseMsg{Text: resp.Texts[0]}
+		}
+		return claudeResponseMsg{Text: "[No Claude response]"}
 	}
 }
 

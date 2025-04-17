@@ -27,22 +27,41 @@ func NewAgent(
 	}
 }
 
+// ClaudeResponse represents a single Claude response, which may include text and tool-use blocks.
+type ClaudeResponse struct {
+	Texts    []string
+	ToolUses []ToolUseBlock
+}
+
+type ToolUseBlock struct {
+	ID   string
+	Name string
+	Args map[string]interface{}
+}
+
 // Expose RunInference for use in Bubble Tea model
-func (a *Agent) RunInference(ctx context.Context, userInput string) (string, error) {
-	// For now, send as a single-message conversation
+func (a *Agent) RunInference(ctx context.Context, userInput string) (ClaudeResponse, error) {
 	messageParam := anthropic.NewUserMessage(anthropic.NewTextBlock(userInput))
 	conversation := []anthropic.MessageParam{messageParam}
 	resp, err := a.runInference(ctx, conversation)
 	if err != nil {
-		return "", err
+		return ClaudeResponse{}, err
 	}
-	// Extract Claude's text response (first text block)
+	var result ClaudeResponse
 	for _, content := range resp.Content {
 		if content.Type == "text" {
-			return content.Text, nil
+			result.Texts = append(result.Texts, content.Text)
+		} else if content.Type == "tool_use" {
+			var args map[string]interface{}
+			_ = json.Unmarshal(content.Input, &args)
+			result.ToolUses = append(result.ToolUses, ToolUseBlock{
+				ID:   content.ID,
+				Name: content.Name,
+				Args: args,
+			})
 		}
 	}
-	return "[No Claude response]", nil
+	return result, nil
 }
 
 func (a *Agent) Run(ctx context.Context) error {
