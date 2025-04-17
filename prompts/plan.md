@@ -93,7 +93,7 @@ Below is a detailed, step-by-step plan to guide the code generation process for 
   - **Step Dependencies**: Step 10
   - **User Instructions**: None
 
-- [ ] **Step 12: Implement code view sub-model**
+- [x] **Step 12: Implement code view sub-model**
   - **Task**: Create `models/codeview.go` with a code view sub-model using `bubbles/viewport` for file contents and a slice for managing tabs of open files.
   - **Files**:
     - `models/codeview.go`: New file with `type codeviewModel struct { viewport viewport.Model, tabs []string, activeTab int }`
