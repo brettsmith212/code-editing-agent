@@ -44,15 +44,36 @@ func (d CompactDelegate) Render(w io.Writer, m list.Model, index int, item list.
 
 // sidebarModel holds state for the sidebar panel.
 type sidebarModel struct {
-	list   list.Model
-	width  int
-	height int
+	list      list.Model
+	width     int
+	height    int
+	currentDir string // Track the current directory path
 }
 
 // newSidebarModelFromDir creates a new sidebarModel and loads files from the given directory.
 func newSidebarModelFromDir(dir string) *sidebarModel {
+	m := &sidebarModel{
+		width:     LeftPanelInitialWidth,
+		height:    LeftPanelInitialHeight,
+		currentDir: dir,
+	}
+	m.list = list.New(nil, CompactDelegate{}, LeftPanelInitialWidth, LeftPanelInitialHeight)
+	m.list.Title = SidebarTitle
+	m.list.SetShowStatusBar(false)
+	m.list.SetFilteringEnabled(false)
+	m.list.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(SidebarHighlightColor))
+	m.loadDir(dir)
+	return m
+}
+
+// loadDir updates the sidebarModel in place to show contents of a directory.
+func (m *sidebarModel) loadDir(dir string) {
 	entries, err := os.ReadDir(dir)
-	items := make([]list.Item, 0, len(entries))
+	items := make([]list.Item, 0, len(entries)+1)
+	parent := parentDir(dir)
+	if parent != "" && parent != dir {
+		items = append(items, fileItem{name: ".."})
+	}
 	if err == nil {
 		for _, entry := range entries {
 			name := entry.Name()
@@ -64,18 +85,18 @@ func newSidebarModelFromDir(dir string) *sidebarModel {
 	} else {
 		items = append(items, fileItem{name: fmt.Sprintf("Error: %v", err)})
 	}
+	m.list.SetItems(items)
+	m.currentDir = dir
+}
 
-	l := list.New(items, CompactDelegate{}, LeftPanelInitialWidth, LeftPanelInitialHeight)
-	l.Title = SidebarTitle
-	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
-	l.Styles.Title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(SidebarHighlightColor))
-
-	return &sidebarModel{
-		list:   l,
-		width:  LeftPanelInitialWidth,
-		height: LeftPanelInitialHeight,
+// Helper to get parent directory, handles root
+func parentDir(dir string) string {
+	parent := strings.TrimSuffix(dir, "/")
+	idx := strings.LastIndex(parent, "/")
+	if idx <= 0 {
+		return "" // Already at root
 	}
+	return parent[:idx]
 }
 
 // updateSize updates the sidebar dimensions based on terminal size.
@@ -108,8 +129,21 @@ func (m *sidebarModel) Update(msg any) tea.Cmd {
 		if msg.Type == tea.KeyEnter {
 			item := m.list.SelectedItem()
 			if file, ok := item.(fileItem); ok {
+				// Directory navigation
+				if file.name == ".." {
+					parent := parentDir(m.currentDir)
+					if parent != "" && parent != m.currentDir {
+						m.loadDir(parent)
+					}
+					return nil
+				} else if strings.HasSuffix(file.name, "/") {
+					nextDir := m.currentDir + "/" + strings.TrimSuffix(file.name, "/")
+					m.loadDir(nextDir)
+					return nil
+				}
+				// Open file as before
 				return func() tea.Msg {
-					return openFileMsg{FileName: file.name}
+					return openFileMsg{FileName: m.currentDir + "/" + file.name}
 				}
 			}
 		}
