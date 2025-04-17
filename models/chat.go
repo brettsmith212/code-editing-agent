@@ -12,21 +12,20 @@ import (
 )
 
 const (
-	userPrefix        = "User: "
-	aiPrefix          = "AI: "
-	claudePrefix      = "Claude: "
-	claudeErrorPrefix = "Claude (error): "
-	paddingWidth      = 6
-	minContentWidth   = 20
-	minViewportHeight = 5
-	textareaHeight    = 1
+	userPrefix         = "User: "
+	aiPrefix           = "AI: "
+	claudePrefix       = "Claude: "
+	claudeErrorPrefix  = "Claude (error): "
+	paddingWidth       = 6
+	minContentWidth    = 20
+	minViewportHeight  = 5
+	textareaHeight     = 1
 	defaultPlaceholder = "Type your message..."
 )
 
 var (
 	// Use normal borders instead of rounded for consistency
-	chatBorderStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
-	viewportStyle   = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
+	viewportStyle = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("69"))
 )
 
 // chatModel holds state for the chat panel.
@@ -88,7 +87,7 @@ func (m *chatModel) updateSize(width, height int) {
 
 	// Set viewport height to fill the available space
 	// Adjust to leave just enough room for textarea (1 line + border)
-	viewportHeight := height - 3 // Space for textarea and some padding
+	viewportHeight := height - 3            // Space for textarea and some padding
 	if viewportHeight < minViewportHeight { // Minimum reasonable height
 		viewportHeight = minViewportHeight
 	}

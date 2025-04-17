@@ -22,17 +22,16 @@ type openFileMsg struct {
 
 // MainModel is the root model for the Bubbletea application.
 type MainModel struct {
-	chat         *chatModel
-	codeview     *codeviewModel
-	sidebar      *sidebarModel
-	Agent        *agent.Agent
-	conversation []string // Conversation history as plain strings for now
-	state        string
-	quitting     bool
-	waitingForClaude bool
-	width        int    // Terminal width
-	height       int    // Terminal height
-	focusedPane  string // "sidebar" or "chat"
+	chat               *chatModel
+	codeview           *codeviewModel
+	sidebar            *sidebarModel
+	Agent              *agent.Agent
+	conversation       []string // Conversation history as plain strings for now
+	quitting           bool
+	waitingForClaude   bool
+	width              int    // Terminal width
+	height             int    // Terminal height
+	focusedPane        string // "sidebar" or "chat"
 	sidebarShowingFile bool
 }
 
@@ -261,13 +260,4 @@ func (m *MainModel) View() string {
 
 	// Add a newline at the top to ensure top border is visible
 	return "\n\n" + row // Add extra newline for top margin
-}
-
-// joinConversation joins conversation history into a single string for display.
-func joinConversation(conv []string) string {
-	result := ""
-	for _, line := range conv {
-		result += line + "\n"
-	}
-	return result
 }
